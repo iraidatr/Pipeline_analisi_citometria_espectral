@@ -1,0 +1,136 @@
+Els paquets necessaris per al procés són:
+```{r}
+library(flowCore)
+library(PeacoQC)
+library(FlowSOM)
+library(cytoMEM)
+library(cycadas)
+library(dplyr)
+library(cycadas)
+```
+
+1. Localitzem el fitxer que volem analitzar i creem un Flowframe d'aquest (aquí hem importat un FSC transformat i amb gates fetes a OMIQ):
+```{r}
+file <- file.path("C:/Users/Cytek Aurora/Desktop/Mostres prova R/FITXER PIPELINE/Muestras Lupus-04122025-271125-9191-B1 ALL_Unmixed.fcs")
+ff <- read.FCS(filename = file, truncate_max_range = FALSE, transformation = FALSE)
+```
+
+2. Procedim a la neteja del fitxer amb PeacoQC, que es fa sobre canals estables (FSC, SSC, CD3, CD19, CD45, etc):
+```{r}
+# Triem els canals a partir dels quals es fa el control de qualitat:
+channelsqc <- colnames(ff)[c(3,5,14,19,25,29,32)]
+
+# Apliquem PeacoQC:
+peacoqc_res <- PeacoQC(ff=ff, channels=channelsqc, determine_good_cells="all", save_fcs=TRUE, plot=TRUE)
+ff_QC <- peacoqc_res$FinalFF
+```
+
+3. Ara que l'arxiu està llest, s'aplica l'algoritme FlowSOM, que dividirà els events en clusters segons l'expressió dels diferents marcadors:
+```{r}
+# Triem els canals pel flowSOM (marcadors que identifiquin llinatges):
+channels_fsom <- colnames(ff_QC)[c(10,11,12,18,20,23,28,32,40:42)]
+
+# Apliquem FlowSOM:
+set.seed(0806)
+fsom <- FlowSOM(ff_QC, compensate=FALSE, transform=FALSE, scale=FALSE, colsToUse = channels_fsom, xdim=12, ydim=12, nClus=30, rlen=10)
+PlotStars(fsom, backgroundValues=fsom$metaclustering)
+```
+
+4. Podem obtenir plots dels clusters que s'han diferenciat:
+```{r}
+# Especifiquem quins marcadors volem enfrontar:
+channel_pairs = list(c("CD19", "CD20"),
+                     c("CD27", "IgD"),
+                     c("CD21", "IgM"),
+                     c("CD24", "CD38"),
+                     c("CD95", "CXCR5"),
+                     c("CD11c", "HLADR"))
+
+metaclusters_of_interest <- seq_len(30)
+clusters_of_interest <- NULL
+
+# Creem els plots: 
+dir_results <- "plots/"
+Plot2DScatters(fsom = fsom,
+               channelpairs = channel_pairs,
+               metaclusters = metaclusters_of_interest,
+               clusters = clusters_of_interest,
+               plotFile = paste0(dir_results, "fsom_scatters.png"))
+```
+
+5. Fem servir MEM per tenir una versió dels resultats més interpretable: 
+```{r}
+# Primer hem d'incloure al FlowFrame una columna que identifiqui el cluster al qual correspon cada event: 
+clusters <- GetMetaclusters(fsom)
+raw_data <- fsom$data
+data_with_clusters <- cbind(raw_data, "Cluster" = clusters)
+ff_cluster <- flowFrame(data_with_clusters)
+```
+
+```{r}
+# MEM treballa amb un dataframe: 
+expr <- exprs(ff_cluster)
+df <- as.data.frame(expr)
+```
+
+```{r}
+# Triem els marcadors dels que volem veure el resultat: 
+MEM_values <- MEM(df, choose.markers = FALSE, zero.ref=TRUE, markers="10,11,12,18,20,23,28,35,40,42", new.marker.names ="CD20,CD24,CD27,IgD,IgM,CXCR5,CD21,CD95,CD11c,38")
+
+labels <- build_heatmaps(
+  MEM_values,
+  display.thresh = 1,
+  output.files = FALSE,
+  labels = TRUE,
+  only.MEMheatmap = TRUE
+)
+```
+
+6. Amb la informació dels plots i MEM, podem identificar cada cluster com un subtipus cel·lular específic. Per anotar-los: 
+```{r}
+# Primer calculem la freqüència de cada cluster: 
+clustering_table <- as.numeric(table(df[, "Cluster"]))
+clustering_prop <- round(clustering_table / sum(clustering_table) * 100, 2)
+df_prop <- as.data.frame(clustering_prop)
+df_prop$Cluster <- rownames(df_prop)
+```
+
+```{r}
+# Canviem "x" pel número del cluster i, si cap cluster forma part d'un grup, comentem la línia amb # per tal que no es llegeixi. 
+df_anotated <- df_prop %>%
+  mutate(Nom_Cluster = case_when(
+    Cluster %in% c(x,x) ~ "B naive",
+    Cluster == x ~ "B naive resting",       
+    Cluster == x ~ "B naive activated", 
+    Cluster == x ~ "B naive anergic",
+    Cluster == x ~ "B transitional T1",
+    Cluster == x ~ "B transitional T2",
+    Cluster == x ~ "B transitional T3",
+    Cluster == x ~ "B class-UnW memory",
+    Cluster == x ~ "B marginal zone memory",
+    Cluster == x ~ "B IgM-only memory",
+    Cluster == x ~ "B IgD-only memory",
+    Cluster == x ~ "B class-sw memory IgG",
+    Cluster == x ~ "B class-sw memory IgA",
+    Cluster == x ~ "SW resting",
+    Cluster == x ~ "SW activated",
+    Cluster == x ~ "Atypical tissue-based",
+    Cluster == x ~ "DN1",
+    Cluster == x ~ "DN2",
+    Cluster == x ~ "Plasmablast",
+    Cluster == x ~ "Plasma cell",
+    TRUE ~ "Altres"         
+  ))
+
+# Per veure la freqüència total per nom:
+df_resum <- df_anotated %>%
+  group_by(Nom_Cluster) %>%
+  summarise(total_prop = sum(clustering_prop))
+```
+
+7. Aquest resultat són percentatges obtinguts dins les cèl·lules B. Per obtenir el resultat sobre el total, hem de saber quin % de cèl·lules B tenia el fitxer original i recalcular. 
+```{r}
+# Canviant "x" per la proporció que representen les cèl·lules B en la mostra total:
+df_total <- df_resum %>%
+  mutate(prop_global = (total_prop / 100) * x)
+```
