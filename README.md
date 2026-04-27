@@ -1,1 +1,1 @@
-# Pipeline-per-a-l-an-lisi-de-dades-de-citometria-espectral
+# Pipeline per a l'anàlisi de dades de citometria espectral
