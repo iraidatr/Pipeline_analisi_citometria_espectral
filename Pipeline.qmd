@@ -4,7 +4,6 @@ library(flowCore)
 library(PeacoQC)
 library(FlowSOM)
 library(cytoMEM)
-library(cycadas)
 library(dplyr)
 library(cycadas)
 ```
