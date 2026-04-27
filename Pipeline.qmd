@@ -5,7 +5,6 @@ library(PeacoQC)
 library(FlowSOM)
 library(cytoMEM)
 library(dplyr)
-library(cycadas)
 ```
 
 1. Localitzem el fitxer que volem analitzar i creem un Flowframe d'aquest (aquí hem importat un FSC transformat i amb gates fetes a OMIQ):
