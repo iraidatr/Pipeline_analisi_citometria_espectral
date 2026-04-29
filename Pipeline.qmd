@@ -103,7 +103,6 @@ df_anotated <- df_prop %>%
     Cluster == x ~ "B naive anergic",
     Cluster == x ~ "B transitional T1",
     Cluster == x ~ "B transitional T2",
-    Cluster == x ~ "B transitional T3",
     Cluster == x ~ "B class-UnW memory",
     Cluster == x ~ "B marginal zone memory",
     Cluster == x ~ "B IgM-only memory",
