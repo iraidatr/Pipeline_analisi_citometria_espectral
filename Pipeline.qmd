@@ -48,6 +48,10 @@ metaclusters_of_interest <- seq_len(30)
 clusters_of_interest <- NULL
 
 # Creem els plots: 
+output_dir <- "plots"
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir)}
+
 dir_results <- "plots/"
 Plot2DScatters(fsom = fsom,
                channelpairs = channel_pairs,
