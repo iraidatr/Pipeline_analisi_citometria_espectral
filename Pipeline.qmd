@@ -7,7 +7,7 @@ library(cytoMEM)
 library(dplyr)
 ```
 
-1. Localitzem el fitxer que volem analitzar i creem un Flowframe d'aquest (aquí hem importat un FSC transformat i amb gates fetes a OMIQ):
+1. Localitzem el fitxer que volem analitzar i creem un Flowframe d'aquest (nosaltres hem importat un FSC transformat i amb gates fetes a OMIQ):
 ```{r}
 files <- list.files("data")
 ff <- read.FCS(filename = files[1], truncate_max_range = FALSE, transformation = FALSE)
