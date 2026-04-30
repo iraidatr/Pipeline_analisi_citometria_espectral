@@ -9,8 +9,8 @@ library(dplyr)
 
 1. Localitzem el fitxer que volem analitzar i creem un Flowframe d'aquest (aquí hem importat un FSC transformat i amb gates fetes a OMIQ):
 ```{r}
-file <- file.path("C:/Users/Cytek Aurora/Desktop/Mostres prova R/FITXER PIPELINE/Muestras Lupus-04122025-271125-9191-B1 ALL_Unmixed.fcs")
-ff <- read.FCS(filename = file, truncate_max_range = FALSE, transformation = FALSE)
+files <- list.files("data")
+ff <- read.FCS(filename = files[1], truncate_max_range = FALSE, transformation = FALSE)
 ```
 
 2. Procedim a la neteja del fitxer amb PeacoQC, que es fa sobre canals estables (FSC, SSC, CD3, CD19, CD45, etc):
