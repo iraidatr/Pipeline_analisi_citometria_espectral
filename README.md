@@ -38,7 +38,15 @@ L’anotació final és semi-manual i depèn del coneixement biològic.
 ├── data/            # (opcional) Fitxers .FCS d'entrada
 ├── plots/           # Resultats gràfics
 ├── Pipeline.qmd         # Codi del pipeline
+├── environment.yml
 └── README.md
 ```
 
 ## 🐍 Entorn Conda
+Aquest projecte utilitza un entorn de Conda per garantir la reproduïbilitat de l’anàlisi i evitar problemes de compatibilitat entre versions de R i paquets. L’arxiu environment.yml conté totes les dependències necessàries per executar el pipeline.
+
+Per recrear l’entorn del projecte, executa a Bash:
+```bash
+conda env create -f environment.yml
+conda activate cytometry
+```
